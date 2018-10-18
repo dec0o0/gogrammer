@@ -25,7 +25,7 @@ type Equivalence struct {
 
 type Operation struct {
 	Numerical   *NumericalOperand `@@`
-	Equivalence *GenericValue     `| "=" @@`
+	Equivalence *VariableValue             `| "=" @@`
 }
 
 type NumericalOperand struct {
@@ -33,10 +33,15 @@ type NumericalOperand struct {
 	Val      float64 `@(Float|Int)`
 }
 
-type GenericValue struct {
+type VariableValue struct {
+	PrefixStar  bool   `[@"*"]`
+	Value       *Value `@@`
+	SuffixStart bool   `[@"*"]`
+}
+
+type Value struct {
 	String string  `@Ident`
 	Number float64 `| @(Float|Int)`
-	Star   bool    `[@"*"]`
 }
 
 func main() {
@@ -45,7 +50,7 @@ func main() {
 		panic(err)
 	}
 	ggrammer := &GGrammer{}
-	err = parser.ParseString("id.ca = 123* AND blalb = aleluia and label( status= malicious1 ) and score > 5", ggrammer)
+	err = parser.ParseString("id.ca = c123* AND blalb = *luia and label( status= malicious1 ) and score > 5 and label(c11c.v=44)", ggrammer)
 	if err != nil {
 		panic(err)
 	}
