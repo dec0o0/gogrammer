@@ -8,35 +8,34 @@ import (
 )
 
 type GGrammer struct {
-	All         bool          `@"*"`
-	Expressions []*Expression `| @@ { ("AND"|"and") @@ }`
+	FetchAll bool      `@"*"`
+	Filters  []*Filter `| @@ { ("AND"|"ANd"|"AnD"|"And"|"anD"|"aNd"|"aND"|"and") @@ }`
+}
+
+type Filter struct {
+	Labels     []*Value    `"label" "(" @@ [ "=" @@ ] ")"`
+	Expression *Expression `| @@`
 }
 
 type Expression struct {
-	LabelEquivalence *Equivalence `"label" "(" @@ ")"`
-	Equivalence      *Equivalence `| @@`
+	Token    string   `@Ident`
+	SubToken string   `[ "." @Ident ]`
+	Operand  *Operand `@@`
 }
 
-type Equivalence struct {
-	SearchToken    string     `@Ident`
-	SubSearchToken string     `[ "." @Ident ]`
-	Operation      *Operation `@@`
+type Operand struct {
+	Numeric *NumericalOperand `@@`
+	Literal *LiteralOperand   `| "=" @@`
 }
 
-type Operation struct {
-	Numerical   *NumericalOperand `@@`
-	Equivalence *VariableValue             `| "=" @@`
+type LiteralOperand struct {
+	Equivalent *Value `@@`
+	Regex      string `| @(String|RawString)`
 }
 
 type NumericalOperand struct {
 	Operator string  `@(">"|">="|"<"|"<=")`
 	Val      float64 `@(Float|Int)`
-}
-
-type VariableValue struct {
-	PrefixStar  bool   `[@"*"]`
-	Value       *Value `@@`
-	SuffixStart bool   `[@"*"]`
 }
 
 type Value struct {
@@ -50,7 +49,7 @@ func main() {
 		panic(err)
 	}
 	ggrammer := &GGrammer{}
-	err = parser.ParseString("id.ca = c123* AND blalb = *luia and label( status= malicious1 ) and score > 5 and label(c11c.v=44)", ggrammer)
+	err = parser.ParseString("table.column = val123 aNd simple = complex AND song = 'alelu[a|b|c]{2,}ia.+' and label(malicious) and label  ( status = malicious1 ) and score > 5", ggrammer)
 	if err != nil {
 		panic(err)
 	}
