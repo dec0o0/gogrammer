@@ -102,7 +102,7 @@ func BenchmarkComplexParsingParallel(b *testing.B) {
 }
 
 func TestOrExpressions(t *testing.T) {
-	res, err := Parse("ij != 44 and label(malicious) or ij == 44 and label(status!=cleared)")
+	res, err := Parse("ij != 44 and label(malicious) or ij = 44 and label(status!=cleared)")
 	if err != nil {
 		t.Error("Parsed failed", err)
 		return
