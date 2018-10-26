@@ -2,20 +2,29 @@ package gogrammer
 
 import (
 	"encoding/json"
+	"strings"
 
 	"github.com/alecthomas/participle"
+	"github.com/alecthomas/participle/lexer"
 )
 
 // GGrammer is the root of the grammer
 type GGrammer struct {
-	FetchAll bool      `@("*"|"all"|"alL"|"aLL"|"aLl"|"All"|"AlL"|"ALl"|"ALL")`
-	Filters  []*Filter `| @@ { ("AND"|"ANd"|"AnD"|"And"|"anD"|"aNd"|"aND"|"and") @@ }`
+	FetchAll bool      `@("*"|"all")`
+	Filters  []*Filter `| @@ { "and" @@ }`
 }
 
 // Filter represents a filtering unit
 type Filter struct {
-	Labels     []*Value    `"label" "(" @@ [ "=" @@ ] ")"`
-	Expression *Expression `| @@`
+	Labeled    *LabelExpression `@@`
+	Expression *Expression      `| @@`
+}
+
+// LabelExpression x
+type LabelExpression struct {
+	Token      string        `"label" "(" @(Ident|String|RawString) `
+	IsNegation bool          `[ (@("!" "=")|"=")`
+	Operand    *ComplexValue `@@ ] ")"`
 }
 
 // Expression represents an atomic operation
@@ -28,23 +37,29 @@ type Expression struct {
 // Operand represents the right hand side of an expression
 type Operand struct {
 	Numeric *NumericalOperand `@@`
-	Literal *LiteralOperand   `| "=" @@`
+	Literal *LiteralOperand   `| @@`
 }
 
-// LiteralOperand represents an operand in string format
+// LiteralOperand literal operand
 type LiteralOperand struct {
-	Equivalent *Value `@@`
-	Regex      string `| @(String|RawString)`
+	IsNegation bool          `["!"]`
+	Value      *ComplexValue `"=" @@`
+}
+
+// ComplexValue represents an operand in string format
+type ComplexValue struct {
+	Value *SimpleValue `@@`
+	Regex string       `| @(String|RawString)`
 }
 
 // NumericalOperand represents a numeric operand, alongside an operator
 type NumericalOperand struct {
-	Operator string  `@(">"|">="|"<"|"<=")`
+	Operator string  `@( ">" ["="] | "<" ["="] )`
 	Val      float64 `@(Float|Int)`
 }
 
-// Value is a leaf value
-type Value struct {
+// SimpleValue is a leaf value
+type SimpleValue struct {
 	String *string  `@Ident`
 	Number *float64 `| @(Float|Int)`
 }
@@ -52,7 +67,7 @@ type Value struct {
 // Parse parses an input string for a grammer representation
 func Parse(input string) (*GGrammer, error) {
 	ggrammer := &GGrammer{}
-	parser, err := participle.Build(&GGrammer{})
+	parser, err := createANewGrammer()
 	if err == nil {
 		err = parser.ParseString(input, ggrammer)
 	}
@@ -62,14 +77,29 @@ func Parse(input string) (*GGrammer, error) {
 // ParseToJSON parses an inout string to Json
 func ParseToJSON(input string) (string, error) {
 	var result = ""
-	parser, err := participle.Build(&GGrammer{})
+	parser, err := createANewGrammer()
 	if err == nil {
 		ggrammer := &GGrammer{}
 		err = parser.ParseString(input, ggrammer)
 		if err == nil {
-			res, _ := json.Marshal(ggrammer)
+			var res []byte
+			res, err = json.Marshal(ggrammer)
 			result = string(res)
 		}
 	}
 	return result, err
+}
+
+func createANewGrammer() (*participle.Parser, error) {
+	return participle.Build(&GGrammer{}, participle.Map(toLowercase))
+}
+
+const ident rune = -2
+
+func toLowercase(token lexer.Token) lexer.Token {
+	var result = token
+	if token.Type == ident {
+		result = lexer.Token{token.Type, strings.ToLower(token.Value), token.Pos}
+	}
+	return result
 }
