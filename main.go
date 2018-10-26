@@ -10,8 +10,12 @@ import (
 
 // GGrammer is the root of the grammer
 type GGrammer struct {
-	FetchAll bool      `@("*"|"all")`
-	Filters  []*Filter `| @@ { "and" @@ }`
+	FetchAll bool   `@("*"|"all")`
+	Or       []*And `| ( @@ { "or" @@ } )`
+}
+
+type And struct {
+	Filters []*Filter `@@ { "and" @@ }`
 }
 
 // Filter represents a filtering unit

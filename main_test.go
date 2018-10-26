@@ -14,7 +14,7 @@ func testFetchAllWorksUsing(t *testing.T, input string) {
 		t.Error("Fetch all failed")
 		panic("Boolean false")
 	}
-	if res.Filters != nil {
+	if len(res.Or) != 0 {
 		t.Error("Fetch all failed because it also parsed subsequent filters")
 		panic("noo")
 	}
@@ -35,15 +35,15 @@ func TestSimpleLabel(t *testing.T) {
 		t.Error("Label parsing failed", err)
 		return
 	}
-	if *res.Filters[0].Labeled.Operand.Value.String != "a" && res.Filters[0].Labeled.Operand.Value.Number != nil {
+	if *res.Or[0].Filters[0].Labeled.Operand.Value.String != "a" && res.Or[0].Filters[0].Labeled.Operand.Value.Number != nil {
 		t.Error("Label left hand side operand parsing failed ")
 		return
 	}
-	if *res.Filters[0].Labeled.Operand.Value.String != "b" && res.Filters[0].Labeled.Operand.Value.Number != nil {
+	if *res.Or[0].Filters[0].Labeled.Operand.Value.String != "b" && res.Or[0].Filters[0].Labeled.Operand.Value.Number != nil {
 		t.Error("Label right hand side operand parsing failed ")
 		return
 	}
-	if res.Filters[0].Labeled.IsNegation {
+	if res.Or[0].Filters[0].Labeled.IsNegation {
 		t.Error("Label is negated when it should not")
 		return
 	}
@@ -55,16 +55,16 @@ func TestNumericalExpression(t *testing.T) {
 		t.Error("Numeric expression parsing failed", err)
 		return
 	}
-	if res.Filters[0].Expression.Token != "jjjj" {
+	if res.Or[0].Filters[0].Expression.Token != "jjjj" {
 		t.Error("Token parse failed")
 		return
 	}
-	if res.Filters[0].Expression.Operand.Numeric.Operator != ">=" {
-		t.Error("Numerical operand failed", res.Filters[0].Expression.Operand.Numeric.Operator)
+	if res.Or[0].Filters[0].Expression.Operand.Numeric.Operator != ">=" {
+		t.Error("Numerical operand failed", res.Or[0].Filters[0].Expression.Operand.Numeric.Operator)
 		return
 	}
-	if res.Filters[0].Expression.Operand.Numeric.Val != 55 {
-		t.Error("Numerical value failed", res.Filters[0].Expression.Operand.Numeric.Val)
+	if res.Or[0].Filters[0].Expression.Operand.Numeric.Val != 55 {
+		t.Error("Numerical value failed", res.Or[0].Filters[0].Expression.Operand.Numeric.Val)
 		return
 	}
 }
@@ -75,7 +75,7 @@ func TestNegatedLabel(t *testing.T) {
 		t.Error("Negated label parsing failed", err)
 		return
 	}
-	if !res.Filters[0].Labeled.IsNegation {
+	if !res.Or[0].Filters[0].Labeled.IsNegation {
 		t.Error("Label is not negated")
 		return
 	}
@@ -89,7 +89,7 @@ func TestComplexFilter(t *testing.T) {
 }
 
 func parseComplexFilter() (string, error) {
-	input := "table.column = val123 aNd simple = complex AND song != 'alelu[a|b|c]{2,}ia.+' and label(malicious) and label  ( status = malicious1 ) and score > 5"
+	input := "table.column = val123 aNd simple = complex AND song != 'alelu[a|b|c]{2,}ia.+' and label(malicious) or label  ( status = malicious1 ) and score > 5"
 	return ParseToJSON(input)
 }
 
@@ -99,4 +99,16 @@ func BenchmarkComplexParsingParallel(b *testing.B) {
 			parseComplexFilter()
 		}
 	})
+}
+
+func TestOrExpressions(t *testing.T) {
+	res, err := Parse("ij != 44 and label(malicious) or ij == 44 and label(status!=cleared)")
+	if err != nil {
+		t.Error("Parsed failed", err)
+		return
+	}
+	if len(res.Or) != 2 && res.Or[1].Filters[1].Labeled.IsNegation {
+		t.Error("Negation failed")
+		return
+	}
 }
