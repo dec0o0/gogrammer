@@ -35,11 +35,11 @@ func TestSimpleLabel(t *testing.T) {
 		t.Error("Label parsing failed", err)
 		return
 	}
-	if *res.Or[0].Filters[0].Labeled.Operand.Value.String != "a" && res.Or[0].Filters[0].Labeled.Operand.Value.Number != nil {
+	if *res.Or[0].Filters[0].Labeled.Operand.Simple.String != "a" && res.Or[0].Filters[0].Labeled.Operand.Simple.Number != nil {
 		t.Error("Label left hand side operand parsing failed ")
 		return
 	}
-	if *res.Or[0].Filters[0].Labeled.Operand.Value.String != "b" && res.Or[0].Filters[0].Labeled.Operand.Value.Number != nil {
+	if *res.Or[0].Filters[0].Labeled.Operand.Simple.String != "b" && res.Or[0].Filters[0].Labeled.Operand.Simple.Number != nil {
 		t.Error("Label right hand side operand parsing failed ")
 		return
 	}
